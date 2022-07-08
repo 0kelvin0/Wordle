@@ -15,5 +15,4 @@ ng serve --open
 cd server
 npm i
 node index.js
-```
-// TODO: current server is just a sample graphQL project used together with client_toDelete for reference. 
+``` 

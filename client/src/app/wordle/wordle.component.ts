@@ -1,6 +1,9 @@
 import { Component, ElementRef, HostListener, QueryList, ViewChildren } from "@angular/core";
-// TODO: To use GraphQL to retrieve available words
-import {WORDS} from './words';
+import { Apollo } from 'apollo-angular';
+import { GET_WORDS, GET_WORD, GET_NUM_WORDS } from '../graphql/graphql.queries';
+import { GraphQLResponseTotal, GraphQLResponseTarget, GraphQLResponseWords, word } from '../graphql/graphql.queries-types';
+import { firstValueFrom } from 'rxjs';
+import {map} from 'rxjs/operators';
 
 // Length of the word.
 const WORD_LENGTH = 5;
@@ -48,6 +51,10 @@ enum LetterState {
 export class Wordle {
   @ViewChildren('tryContainer') tryContainers!: QueryList<ElementRef>;
   
+  // Stores graphQL data
+  totalWords: number = 0;
+  wordList: string[] = [];
+
   // Stores all tries.
   // One try is one row in the UI.
   readonly tries: Try[] = [];
@@ -74,14 +81,14 @@ export class Wordle {
   showShareDialogContainer = false;
   showShareDialog = false;
 
+  // Store the target word.
+  targetWord: GraphQLResponseTarget["getWordByID"] = {spelling: '' , meaning: ''};
+
   // Tracks the current letter index.
   private curLetterIndex = 0;
 
   // Tracks the number of submitted tries.
   private numSubmittedTries = 0;
-
-  // Store the target word.
-  private targetWord = '';
 
   // Won or not.
   private won = false;
@@ -91,7 +98,30 @@ export class Wordle {
   // { 'h':1, 'a': 1, 'p': 2, 'y': 1 }
   private targetWordLetterCounts: {[letter: string]: number} = {};
 
-  constructor() {
+  constructor(private apollo: Apollo) {}
+
+  async ngOnInit(): Promise<void> {
+    this.totalWords = await this.getNumWords();
+    const randomNumber = Math.floor((Math.random() * this.totalWords) + 1);
+    this.targetWord = await this.getTargetWord(randomNumber);
+    let words: string[] = []; 
+    (await this.getWords()).forEach(function (value) {
+      words.push(value.spelling);
+    });
+    this.wordList = words;
+
+    // Print it out so we can cheat!:)
+    console.log('target word: ', this.targetWord.spelling);
+    // Generate letter counts for target word.
+    for (const letter of this.targetWord.spelling) {
+      const count = this.targetWordLetterCounts[letter];
+      if (count == null) {
+        this.targetWordLetterCounts[letter] = 0;
+      }
+      this.targetWordLetterCounts[letter]++;
+    }
+    console.log(this.targetWordLetterCounts);
+
     // Populate initial state of "tries".
     for (let i = 0; i < NUM_TRIES; i++) {
       const letters: Letter[] = [];
@@ -100,22 +130,6 @@ export class Wordle {
       }
       this.tries.push({letters});
     }
-
-    // TODO: To use GraphQL to retrieve available words instead
-    // i.e., this.targetWord = gql`query { }`
-    this.getTarget();
-
-    // Print it out so we can cheat!:)
-    console.log('target word: ', this.targetWord);
-    // Generate letter counts for target word.
-    for (const letter of this.targetWord) {
-      const count = this.targetWordLetterCounts[letter];
-      if (count == null) {
-        this.targetWordLetterCounts[letter] = 0;
-      }
-      this.targetWordLetterCounts[letter]++;
-    }
-    console.log(this.targetWordLetterCounts);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -167,18 +181,32 @@ export class Wordle {
     }
   }
 
-  private getTarget() {
-    // Get a target word from the word list.
-    const numWords = WORDS.length;
-    while (true) {
-      // Randomly select a word and check if its length is WORD_LENGTH.
-      const index = Math.floor(Math.random() * numWords);
-      const word = WORDS[index];
-      if (word.length === WORD_LENGTH) {
-        this.targetWord = word.toLowerCase();
-        break;
-      }
-    }
+  private async getNumWords(): Promise<number> {
+    return firstValueFrom(
+      this.apollo.query<GraphQLResponseTotal>({ query: GET_NUM_WORDS })
+      .pipe(map((m) => m.data.getNumWords))
+    );
+  }
+
+  private async getTargetWord(id: number): Promise<GraphQLResponseTarget["getWordByID"]> {
+    return firstValueFrom(
+      this.apollo.query<GraphQLResponseTarget>({ 
+        query: GET_WORD,
+        variables: {
+          id,
+        }, 
+      })
+      .pipe(map((m) => m.data.getWordByID))
+    );
+  }
+
+  private async getWords(): Promise<word[]> {
+    return firstValueFrom(
+      this.apollo.query<GraphQLResponseWords>({ 
+        query: GET_WORDS,
+      })
+      .pipe(map((m) => m.data.getWords))
+    );
   }
 
   private setLetter(letter: string) {
@@ -197,8 +225,8 @@ export class Wordle {
 
     // Check if the current try is a word in the list.
     const wordFromCurTry =
-        curTry.letters.map(letter => letter.text).join('').toUpperCase();
-    if (!WORDS.includes(wordFromCurTry)) {
+        curTry.letters.map(letter => letter.text).join('').toLowerCase();
+    if (!this.wordList.includes(wordFromCurTry)) {
       this.showInfoMessage('Not in word list');
       // Shake the current row.
       const tryContainer =
@@ -218,7 +246,7 @@ export class Wordle {
     const targetWordLetterCounts = {...this.targetWordLetterCounts};
     const states: LetterState[] = [];
     for (let i = 0; i < WORD_LENGTH; i++) {
-      const expected = this.targetWord[i];
+      const expected = this.targetWord.spelling[i];
       const curLetter = curTry.letters[i];
       const got = curLetter.text.toLowerCase();
       let state = LetterState.WRONG;
@@ -231,7 +259,7 @@ export class Wordle {
         targetWordLetterCounts[expected]--;
         state = LetterState.FULL_MATCH;
       } else if (
-          this.targetWord.includes(got) && targetWordLetterCounts[got] > 0) {
+          this.targetWord.spelling.includes(got) && targetWordLetterCounts[got] > 0) {
         targetWordLetterCounts[got]--
         state = LetterState.PARTIAL_MATCH;
       }
@@ -295,7 +323,7 @@ export class Wordle {
     // Running out of tries. Show correct answer.
     if (this.numSubmittedTries === NUM_TRIES) {
       // Don't hide it.
-      this.showInfoMessage(this.targetWord.toUpperCase(), false);
+      this.showInfoMessage(this.targetWord.spelling.toUpperCase(), false);
       this.showShare();
     }
   }

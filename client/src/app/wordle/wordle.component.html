@@ -1,5 +1,5 @@
 <div class="container">
-  <div class="title-container">
+  	<div class="title-container">
 		<div class="title"> My Wordle </div>
 		<div class="subtitle">
 			Educational purpose only. Play the original Wordle game
@@ -7,7 +7,7 @@
 		</div>
 	</div>
   
-  <div class="main">
+  	<div class="main">
 		<div class="try-container" *ngFor="let try of tries" #tryContainer>
 			<div class="letter-container" *ngFor="let letter of try.letters"
 			    [class.match]="letter.state === LetterState.FULL_MATCH"
@@ -19,13 +19,13 @@
 		</div>
 	</div>
 
-  <div class="keyboard-container">
+  	<div class="keyboard-container">
 		<div [class]="['row' + i, 'row'].join(' ')"
 		    *ngFor="let row of keyboardRows; let i = index">
 			<div *ngFor="let key of row" [class]="getKeyClass(key)"
 			    [class.enter]="key === 'Enter'"
-          [class.backspace]="key === 'Backspace'"
-					(click)="handleClickKey(key)">
+          		[class.backspace]="key === 'Backspace'"
+				(click)="handleClickKey(key)">
 				<div *ngIf="key !== 'Backspace'; else backspace">
 				  {{key}}
 				</div>
@@ -36,7 +36,7 @@
 		</div>
 	</div>
 
-  <div class="info-msg"
+  	<div class="info-msg"
 	    [class.show]="infoMsg !== ''"
 	    [class.fade-out]="fadeOutInfoMessage">
 		{{infoMsg}}
@@ -44,6 +44,8 @@
 
   <div class="share-dialog-container" [class.show]="showShareDialogContainer">
 		<div class="share-dialog" [class.show]="showShareDialog">
+			<div class="spelling"> {{targetWord.spelling}} </div>
+			<div class="meaning"> {{targetWord.meaning}} </div>
 			<button (click)="handleClickShare()">Share</button>
 		</div>
 	</div>
