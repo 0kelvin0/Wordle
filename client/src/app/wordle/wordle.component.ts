@@ -1,9 +1,6 @@
 import { Component, ElementRef, HostListener, QueryList, ViewChildren } from "@angular/core";
-import { Apollo } from 'apollo-angular';
-import { GET_WORDS, GET_WORD, GET_NUM_WORDS } from '../graphql/graphql.queries';
-import { GraphQLResponseTotal, GraphQLResponseTarget, GraphQLResponseWords, word } from '../graphql/graphql.queries-types';
-import { firstValueFrom } from 'rxjs';
-import {map} from 'rxjs/operators';
+import { GraphQLQueryService } from "../graphql/graphql.queries";
+import { GraphQLResponseTarget } from '../graphql/graphql.queries-types';
 
 // Length of the word.
 const WORD_LENGTH = 5;
@@ -48,7 +45,7 @@ enum LetterState {
   templateUrl: './wordle.component.html',
   styleUrls: ['./wordle.component.scss'],
 })
-export class Wordle {
+export class WordleComponent {
   @ViewChildren('tryContainer') tryContainers!: QueryList<ElementRef>;
   
   // Stores graphQL data
@@ -98,14 +95,14 @@ export class Wordle {
   // { 'h':1, 'a': 1, 'p': 2, 'y': 1 }
   private targetWordLetterCounts: {[letter: string]: number} = {};
 
-  constructor(private apollo: Apollo) {}
+  constructor(private _graphQLQueryService: GraphQLQueryService) {}
 
   async ngOnInit(): Promise<void> {
-    this.totalWords = await this.getNumWords();
+    this.totalWords = await this._graphQLQueryService.getNumWords();
     const randomNumber = Math.floor((Math.random() * this.totalWords) + 1);
-    this.targetWord = await this.getTargetWord(randomNumber);
+    this.targetWord = await this._graphQLQueryService.getTargetWord(randomNumber);
     let words: string[] = []; 
-    (await this.getWords()).forEach(function (value) {
+    (await this._graphQLQueryService.getWords()).forEach(function (value) {
       words.push(value.spelling);
     });
     this.wordList = words;
@@ -179,34 +176,6 @@ export class Wordle {
       default:
         return 'key';
     }
-  }
-
-  private async getNumWords(): Promise<number> {
-    return firstValueFrom(
-      this.apollo.query<GraphQLResponseTotal>({ query: GET_NUM_WORDS })
-      .pipe(map((m) => m.data.getNumWords))
-    );
-  }
-
-  private async getTargetWord(id: number): Promise<GraphQLResponseTarget["getWordByID"]> {
-    return firstValueFrom(
-      this.apollo.query<GraphQLResponseTarget>({ 
-        query: GET_WORD,
-        variables: {
-          id,
-        }, 
-      })
-      .pipe(map((m) => m.data.getWordByID))
-    );
-  }
-
-  private async getWords(): Promise<word[]> {
-    return firstValueFrom(
-      this.apollo.query<GraphQLResponseWords>({ 
-        query: GET_WORDS,
-      })
-      .pipe(map((m) => m.data.getWords))
-    );
   }
 
   private setLetter(letter: string) {

@@ -5,12 +5,13 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { GraphQLModule } from './graphql.module';
 import { HttpClientModule } from '@angular/common/http';
-import { Wordle } from './wordle/wordle.component';
+import { WordleComponent } from './wordle/wordle.component';
+import { GraphQLQueryService } from './graphql/graphql.queries';
 
 @NgModule({
   declarations: [
     AppComponent,
-    Wordle,
+    WordleComponent
   ],
   imports: [
     BrowserModule,
@@ -18,7 +19,7 @@ import { Wordle } from './wordle/wordle.component';
     GraphQLModule,
     HttpClientModule
   ],
-  providers: [],
+  providers: [GraphQLQueryService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

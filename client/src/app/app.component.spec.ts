@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { Apollo } from 'apollo-angular';
 import { AppComponent } from './app.component';
+import { WordleComponent } from './wordle/wordle.component';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -9,8 +11,12 @@ describe('AppComponent', () => {
         RouterTestingModule
       ],
       declarations: [
-        AppComponent
+        AppComponent,
+        WordleComponent
       ],
+      providers: [
+        { provide: Apollo, useValue: {} }
+      ]
     }).compileComponents();
   });
 
@@ -26,10 +32,10 @@ describe('AppComponent', () => {
     expect(app.title).toEqual('angular-graphql');
   });
 
-  it('should render title', () => {
+  it('should render the main wordle component', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.content span')?.textContent).toContain('angular-graphql app is running!');
+    expect(compiled.querySelector('wordle')).toBeTruthy();
   });
 });
