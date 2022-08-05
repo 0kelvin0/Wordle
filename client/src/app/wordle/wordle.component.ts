@@ -40,6 +40,13 @@ enum LetterState {
   PENDING,
 }
 
+const clickSound = new Audio("../../assets/Click.wav");
+const backspaceSound = new Audio("../../assets/BackButton.wav");
+const winSound = new Audio("../../assets/kid_cheer.wav");
+const loseSound = new Audio("../../assets/awwww.mp3");
+const flipSound = new Audio("../../assets/flip.wav");
+const gameBGM = new Audio("../../assets/Adventure-320bit.mp3");
+
 @Component({
   selector: 'wordle',
   templateUrl: './wordle.component.html',
@@ -127,6 +134,8 @@ export class WordleComponent {
       }
       this.tries.push({letters});
     }
+    gameBGM.volume = 0.5;
+    gameBGM.play()
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -148,6 +157,8 @@ export class WordleComponent {
         this.setLetter(key);
         this.curLetterIndex++;
       }
+      clickSound.currentTime = 0;
+      clickSound.play();
     }
     // Handle delete.
     else if (key === 'Backspace') {
@@ -155,6 +166,8 @@ export class WordleComponent {
       if (this.curLetterIndex > this.numSubmittedTries * WORD_LENGTH) {
         this.curLetterIndex--;
         this.setLetter('');
+        backspaceSound.currentTime = 0;
+        backspaceSound.play();
       }
     }
     // Submit the current try and check.
@@ -253,6 +266,8 @@ export class WordleComponent {
       curTry.letters[i].state = states[i];
       // Unfold.
       curLetterEle.classList.remove('fold');
+      flipSound.currentTime = 0;
+      flipSound.play();
       await this.wait(180);
     }
 
@@ -279,6 +294,7 @@ export class WordleComponent {
     if (states.every(state => state === LetterState.FULL_MATCH)) {
       this.showInfoMessage('NICE!');
       this.won = true;
+      winSound.play();
       // Bounce animation.
       for (let i = 0; i < letterEles.length; i++) {
         const curLetterEle = letterEles[i];
@@ -294,6 +310,7 @@ export class WordleComponent {
       // Don't hide it.
       this.showInfoMessage(this.targetWord.spelling.toUpperCase(), false);
       this.showShare();
+      loseSound.play();
     }
   }
 
