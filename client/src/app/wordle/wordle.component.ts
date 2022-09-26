@@ -135,7 +135,9 @@ export class WordleComponent {
       this.tries.push({letters});
     }
     gameBGM.volume = 0.5;
-    gameBGM.play()
+    await gameBGM.load();
+    gameBGM.muted = false; // Workaround for Google Autoplay Policy
+    await gameBGM.play();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -316,6 +318,7 @@ export class WordleComponent {
 
   private showInfoMessage(msg: string, hide = true) {
     this.infoMsg = msg;
+    console.log(msg); // For testing as this msg is transient 
     if (hide) {
       // Hide after 2s.
       setTimeout(() => {
