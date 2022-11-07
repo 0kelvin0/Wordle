@@ -97,6 +97,9 @@ export class WordleComponent {
   // Won or not.
   private won = false;
 
+  // To handle for Google Autoplay Policy
+  private bgmStarted = false;
+
   // Stores the count for each letter from the target word.
   // For example, if the target word is "happy", then this map will look like:
   // { 'h':1, 'a': 1, 'p': 2, 'y': 1 }
@@ -135,9 +138,8 @@ export class WordleComponent {
       this.tries.push({letters});
     }
     gameBGM.volume = 0.5;
+    gameBGM.loop = true;
     await gameBGM.load();
-    gameBGM.muted = false; // Workaround for Google Autoplay Policy
-    await gameBGM.play();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -149,6 +151,11 @@ export class WordleComponent {
     // Don't process key down when user has won the game.
     if (this.won) {
       return;
+    }
+
+    if (!this.bgmStarted) {
+      this.bgmStarted = true
+      gameBGM.play();
     }
 
     // If key is a letter, update the text in the corresponding letter object.
