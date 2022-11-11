@@ -31,5 +31,5 @@ test
 ('Should allow valid word', async t => {
   await t.pressKey('a p p l e enter');
   const { log } = await t.getBrowserConsoleMessages();
-  await t.expect(log[log.length-1]).match(/[01]\,[01]\,[01]\,[01]\,[01]/); // Log when input is valid
+  await t.expect(log[log.length-1]).match(/[012]\,[012]\,[012]\,[012]\,[012]/); // Log when input is valid
 });
